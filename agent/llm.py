@@ -1,0 +1,84 @@
+import json
+from typing import Dict, Any, Optional
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
+
+class LLM:
+    """LLM that uses OpenAI API to generate plans based on input prompts"""
+    
+    def __init__(self):
+        """Initialize the OpenAI client"""
+        load_dotenv()
+        self.client = OpenAI( base_url="https://openrouter.ai/api/v1",api_key=os.getenv("OPENAI_API_KEY"))
+    
+    def generate_plan(self, prompt: str) -> Dict[str, Any]:
+        """
+        Generate a structured plan based on the input prompt.
+        Returns a dictionary with either a tool call or a direct answer.
+        """
+        # Create a system prompt that defines our tool selection task
+        system_prompt = """You are an AI assistant that helps determine which tool to use for a given query.
+        Available tools:
+        - weather: Get weather information for a city
+        - calc: Perform mathematical calculations
+        - fx: Convert between currencies
+        
+        For each query, respond with a JSON object containing either:
+        1. "tool" and "args" for the appropriate tool, or
+        2. "answer" with a direct response if no tool is needed
+        4. only given format give me not anything if tools available
+        5. for curreny use from and to in args
+        
+        Example format:
+        {"tool": "weather", "args": {"city": "paris"}}
+        or
+        {"answer": "The capital of France is Paris"}"""
+        
+        # Call OpenAI API
+        completion = self.client.chat.completions.create(
+            model="openai/gpt-4o",
+            max_tokens=314,
+            messages=[
+                {"role": "user", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # Parse the response
+        try:
+            content = completion.choices[0].message.content.strip()
+            print("content",content)
+            response = json.loads(content)
+            print("llm response:",response)
+            return response
+        except (AttributeError, json.JSONDecodeError) as e:
+            # Fallback response if there's an error
+            return {"answer": f"I'm having trouble processing that request: {str(e)}"}
+    
+    def _extract_amount(self, prompt: str) -> float:
+        """Extract numeric amount from the prompt"""
+        # Simple implementation - in real use, would use better NLP
+        for word in prompt.split():
+            try:
+                return float(word)
+            except ValueError:
+                continue
+        return 15.0  # Default value
+    
+    def _extract_currencies(self, prompt: str) -> tuple:
+        """Extract from and to currencies from the prompt"""
+        currencies = []
+        for word in prompt.split():
+            if word.upper() in ["USD", "EUR", "GBP", "JPY"]:
+                currencies.append(word.lower())
+        if len(currencies) >= 2:
+            return currencies[0], currencies[1]
+        return "usd", "eur"  # Default values
+
+# Backward compatibility for existing code
+llm = LLM()
+
+def call_llm(prompt: str) -> Dict[str, Any]:
+    """Legacy interface for compatibility"""
+    return llm.generate_plan(prompt)
