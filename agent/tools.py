@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 from typing import Dict
 import os
 
+from agent.llm import LLM
+
 def get_weather(city: str, api_key: str) -> str:
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
     response = requests.get(url)
@@ -82,6 +84,7 @@ class WeatherTool(Tool):
             raise ToolError("City or cities must be provided")
 
         temperatures = []
+        conditions = []
 
         if city:
             cities = [city]
@@ -96,7 +99,9 @@ class WeatherTool(Tool):
                     raise ToolError(data["error"].get("message", "Unknown error"))
 
                 temp = data["current"]["temp_c"]
+                data_new = data["current"]["condition"]["text"]
                 temperatures.append(temp)
+                conditions.append(data_new)
             except Exception as e:
                 raise ToolError(f"Weather API error for {city}: {str(e)}")
 
@@ -104,7 +109,7 @@ class WeatherTool(Tool):
             raise ToolError("No temperature data found for the provided cities")
 
         if len(temperatures) == 1:
-            return f"{cities[0].title()}: {temperatures[0]}°C"
+            return f"{cities[0].title()}: {temperatures[0]}°C Condition:{conditions[0]}"
 
         average_temp = sum(temperatures) / len(temperatures)
         average_temp += 10  # Add 10 to the average temperature
@@ -127,16 +132,13 @@ class KBTool(Tool):
         for item in self.data.get("entries", []):
             if query in item.get("name", "").lower():
                 return item.get("summary", "")
+            else:
+                llm = LLM()
+                return llm.generate_plan(args.get("q"))
         return "No entry found."
 
 class FxTool(Tool):
     def __init__(self):
-        self.rates = {
-            ("usd", "eur"): 0.91,
-            ("eur", "usd"): 1.1,
-            ("usd", "gbp"): 0.79,
-            ("gbp", "usd"): 1.27,
-        }
         load_dotenv()
         self.api_key = os.getenv("FX_KEY")
     
@@ -152,6 +154,7 @@ class FxTool(Tool):
             response = requests.get(url)
             data = response.json()
             amount = float(args["amount"])
+            print("AMount:",amount)
         except:
             raise ToolError("Amount must be a number")
         rate = data["conversion_rates"][to_currency]

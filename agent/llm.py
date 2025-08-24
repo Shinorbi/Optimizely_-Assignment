@@ -28,10 +28,12 @@ class LLM:
         2. "answer" with a direct response if no tool is needed
         4. only given format give me not anything if tools available
         5. for curreny use from and to in args
-        6. If two cities then do what it done to prompt
-        7.For math args do calculation too
-        8. For Math in args a result section should be add where result will be added.
-        9. If the user asks to add 10 to the average temperature of multiple cities, use the weather tool with a list of cities.
+        6. For currency conversion, if in prompt currency is all lower then also  use: {"tool": "fx", "args": {"from": "bdt", "to": "gbp", "amount": 100}}
+        7. If two cities then do what it done to prompt
+        8.For math args do calculation too
+        9. For Math in args a result section should be add where result will be added.
+        10. If the user asks to add 10 to the average temperature of multiple cities, use the weather tool with a list of cities.
+        11. If propmt is contain a name or thing then find out what is this and summarize that.
         
         Example format:
         {"tool": "weather", "args": {"city": "paris"}}
@@ -43,6 +45,7 @@ class LLM:
         # Call OpenAI API
         completion = self.client.chat.completions.create(
             model="openai/gpt-4o",
+            temperature=0,
             max_tokens=1000,
             messages=[
                 {"role": "user", "content": system_prompt},
@@ -53,14 +56,12 @@ class LLM:
         # Parse the response
         try:
             content = completion.choices[0].message.content.strip()
-            print("content",content)
             response = json.loads(content)
             if isinstance(response, list):
                 for step in response:
                     print("Tool:", step.get("tool"), "Args:", step.get("args"))
                 return response
             else:
-                print("llm response:", response)
                 return response
 
             # print("llm response:",response)
@@ -68,26 +69,6 @@ class LLM:
         except (AttributeError, json.JSONDecodeError) as e:
             # Fallback response if there's an error
             return {"answer": f"I'm having trouble processing that request: {str(e)}"}
-    
-    def _extract_amount(self, prompt: str) -> float:
-        """Extract numeric amount from the prompt"""
-        # Simple implementation - in real use, would use better NLP
-        for word in prompt.split():
-            try:
-                return float(word)
-            except ValueError:
-                continue
-        return 15.0  # Default value
-    
-    def _extract_currencies(self, prompt: str) -> tuple:
-        """Extract from and to currencies from the prompt"""
-        currencies = []
-        for word in prompt.split():
-            if word.upper() in ["USD", "EUR", "GBP", "JPY"]:
-                currencies.append(word.lower())
-        if len(currencies) >= 2:
-            return currencies[0], currencies[1]
-        return "usd", "eur"  # Default values
 
 # Backward compatibility for existing code
 llm = LLM()
