@@ -58,15 +58,17 @@ pytest -q
 
 Good luck & have fun!
 
-##My Updates
-🚀 Features
+## My Updates
+#🚀Features
 - 🔍 Natural language prompt interpretation via OpenAI (via OpenRouter)
 - 🛠️ Built-in tools (Weather, Currency Conversion, Math) in one file
 - 🧠 Structured plan generation using LLM
 - 🧪 Unit-tested with pytest
 - 📦 Easily extensible architecture
 
-🏗️ Architecture Diagram
+# 🏗️ Architecture Diagram
+
+```
 +----------------------------+
 |        User Prompt         |
 +----------------------------+
@@ -92,10 +94,12 @@ Good luck & have fun!
 +--------+ +--------+ +--------+
               ↓
 +----------------------------+
-|     Final Answer Output     
+|     Final Answer Output    |
+
+```   
 
 
-🔁 Code Flow
+# 🔁 Code Flow
 - User Input: A natural language prompt is passed to main.py.
 - LLM Planning: LLM.generate_plan() sends the prompt to OpenAI and receives a structured JSON plan.
 - Tool Dispatching: Each step in the plan is routed to the appropriate class in tools.py.
@@ -103,20 +107,22 @@ Good luck & have fun!
 - Response Assembly: Final output is constructed and returned to the user.
 
 
-🧩 Tool Details (All in tools.py)
+# 🧩 Tool Details (All in tools.py)
+```
 | Tool | Description  
 | WeatherTool | Fetches weather data for cities |
 | CalcTool | Evaluates math expressions |
 | FxTool | Converts currency | 
 | KbTool | Knowledge Based Tool|
+```
 
 
-🧪 Testing
+# 🧪 Testing
 Run all tests using:
 python -m pytest tests/test_smoke.py -v 
 
-📚 Example Prompt
-Prompt:
+# 📚 Example Prompt
+- Prompt:
 "Convert 1000 usd to bdt "
 
 
@@ -127,22 +133,22 @@ plan Convert 1000 usd to bdt
 AMount: 1000.0
 121598.4 BDT
 
-Another Prompt:
+- Another Prompt:
 Add 10 to the average temperature in Sylhet and Dhaka right now. "
 
 Result:
-(.venv) PS E:\se1-agent-debug-assignment2\se1-agent-debug-assignment> python main.py "Add 10 to the average temperature in Sylhet and Dhaka right now. "
-Add 10 to the average temperature in Sylhet and Dhaka right now. 
-plan Add 10 to the average temperature in Sylhet and Dhaka right now. 
-Average temperature for Sylhet, Dhaka + 10 is: 37.6°C
+(.venv) PS E:\se1-agent-debug-assignment2\se1-agent-debug-assignment> python main.py "Add 10 to the average temperature in Sylhet and Dhaka right now. "<br>
+Add 10 to the average temperature in Sylhet and Dhaka right now. <br>
+plan Add 10 to the average temperature in Sylhet and Dhaka right now. <br>
+Average temperature for Sylhet, Dhaka + 10 is: 37.6°C<br>
 
-Another Prompt:
+- Another Prompt:
 "Weather in Sylhet right now. "
 
 Result:
- PS E:\se1-agent-debug-assignment2\se1-agent-debug-assignment> python main.py "Weather in Sylhet right now. "          
-Weather in Sylhet right now. 
-plan Weather in Sylhet right now. 
+ PS E:\se1-agent-debug-assignment2\se1-agent-debug-assignment> python main.py "Weather in Sylhet right now. "<br>       
+Weather in Sylhet right now. <br>
+plan Weather in Sylhet right now.<br> 
 Sylhet: 26.2°C Condition:Light rain shower
 
 
