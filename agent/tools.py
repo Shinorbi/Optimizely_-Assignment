@@ -1,6 +1,20 @@
 import json
+import string
 from typing import Any, Dict
 from abc import ABC, abstractmethod
+import requests
+from dotenv import load_dotenv
+from typing import Dict
+import os
+
+def get_weather(city: str, api_key: str) -> str:
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+    response = requests.get(url)
+    data = response.json()
+    temp = data["main"]["temp"]
+    condition = data["weather"][0]["description"]
+    return f"{city.title()}: {temp}°C, {condition}"
+
 
 class ToolError(Exception):
     """Base class for tool-related errors"""
@@ -12,14 +26,14 @@ class Tool(ABC):
         pass
 
 class CalculatorTool(Tool):
-    def execute(self, args: Dict) -> float:
-        if not isinstance(args.get("expr"), (str, int, float)):
-            raise ToolError("Invalid expression format")
+    def execute(self, args: Dict) -> string:
+        # if not isinstance(args.get("result"), (str, int, float)):
+        #     raise ToolError("Invalid expression format")
         try:
-            expr = str(args["expr"]).replace(" ", "")
-            if any(op in expr for op in "+-*/%"):
-                return self._evaluate_math(expr)
-            return float(expr)
+            # expr = str(args["expr"]).replace(" ", "")
+            # if any(op in expr for op in "+-*/%"):
+            #     return self._evaluate_math(expr)
+            return args.get("result")
         except Exception as e:
             raise ToolError(f"Calculation error: {str(e)}")
 
@@ -48,6 +62,11 @@ class CalculatorTool(Tool):
 
 class WeatherTool(Tool):
     def __init__(self):
+        load_dotenv()
+        self.api_key = os.getenv("WEATHER_API_KEY")
+        if not self.api_key:
+            raise ToolError("Missing WEATHER_API_KEY in environment")
+
         self._temps = {
             "paris": 18.0,
             "london": 17.0,
@@ -56,12 +75,41 @@ class WeatherTool(Tool):
         }
     
     def execute(self, args: Dict) -> str:
-        if not isinstance(args.get("city"), str):
-            raise ToolError("City must be a string")
-        city = args["city"].strip().lower()
-        temp = self._temps.get(city, 20.0)
-        return f"{temp}°C"
+        city = args.get("city")
+        cities = args.get("cities")
 
+        if not city and not cities:
+            raise ToolError("City or cities must be provided")
+
+        temperatures = []
+
+        if city:
+            cities = [city]
+
+        for city in cities:
+            try:
+                url = f"http://api.weatherapi.com/v1/current.json?key={self.api_key}&q={city}"
+                response = requests.get(url)
+                data = response.json()
+
+                if "error" in data:
+                    raise ToolError(data["error"].get("message", "Unknown error"))
+
+                temp = data["current"]["temp_c"]
+                temperatures.append(temp)
+            except Exception as e:
+                raise ToolError(f"Weather API error for {city}: {str(e)}")
+
+        if not temperatures:
+            raise ToolError("No temperature data found for the provided cities")
+
+        if len(temperatures) == 1:
+            return f"{cities[0].title()}: {temperatures[0]}°C"
+
+        average_temp = sum(temperatures) / len(temperatures)
+        average_temp += 10  # Add 10 to the average temperature
+
+        return f"Average temperature for {', '.join([city.title() for city in cities])} + 10 is: {average_temp}°C"
 class KBTool(Tool):
     def __init__(self):
         try:
@@ -89,22 +137,24 @@ class FxTool(Tool):
             ("usd", "gbp"): 0.79,
             ("gbp", "usd"): 1.27,
         }
+        load_dotenv()
+        self.api_key = os.getenv("FX_KEY")
     
     def execute(self, args: Dict) -> str:
         required_fields = ["amount", "from", "to"]
         for field in required_fields:
             if field not in args:
                 raise ToolError(f"Missing required field: {field}")
-        
+        from_currency = args["from"].upper()
+        to_currency= args["to"].upper()
         try:
+            url = f"https://v6.exchangerate-api.com/v6/{self.api_key}/latest/{args['from']}"
+            response = requests.get(url)
+            data = response.json()
             amount = float(args["amount"])
         except:
             raise ToolError("Amount must be a number")
-        
-        from_currency = args["from"].lower()
-        to_currency = args["to"].lower()
-        
-        rate = self.rates.get((from_currency, to_currency))
+        rate = data["conversion_rates"][to_currency]
         if not rate:
             raise ToolError(f"Unsupported currency pair: {from_currency}/{to_currency}")
         

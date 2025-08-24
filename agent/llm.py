@@ -17,7 +17,6 @@ class LLM:
         Generate a structured plan based on the input prompt.
         Returns a dictionary with either a tool call or a direct answer.
         """
-        # Create a system prompt that defines our tool selection task
         system_prompt = """You are an AI assistant that helps determine which tool to use for a given query.
         Available tools:
         - weather: Get weather information for a city
@@ -29,16 +28,22 @@ class LLM:
         2. "answer" with a direct response if no tool is needed
         4. only given format give me not anything if tools available
         5. for curreny use from and to in args
+        6. If two cities then do what it done to prompt
+        7.For math args do calculation too
+        8. For Math in args a result section should be add where result will be added.
+        9. If the user asks to add 10 to the average temperature of multiple cities, use the weather tool with a list of cities.
         
         Example format:
         {"tool": "weather", "args": {"city": "paris"}}
+        or
+        {"tool": "weather", "args": {"cities": ["paris", "london"]}}
         or
         {"answer": "The capital of France is Paris"}"""
         
         # Call OpenAI API
         completion = self.client.chat.completions.create(
             model="openai/gpt-4o",
-            max_tokens=314,
+            max_tokens=1000,
             messages=[
                 {"role": "user", "content": system_prompt},
                 {"role": "user", "content": prompt}
@@ -50,8 +55,16 @@ class LLM:
             content = completion.choices[0].message.content.strip()
             print("content",content)
             response = json.loads(content)
-            print("llm response:",response)
-            return response
+            if isinstance(response, list):
+                for step in response:
+                    print("Tool:", step.get("tool"), "Args:", step.get("args"))
+                return response
+            else:
+                print("llm response:", response)
+                return response
+
+            # print("llm response:",response)
+            # return response
         except (AttributeError, json.JSONDecodeError) as e:
             # Fallback response if there's an error
             return {"answer": f"I'm having trouble processing that request: {str(e)}"}
