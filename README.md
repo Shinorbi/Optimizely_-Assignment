@@ -57,3 +57,93 @@ pytest -q
 - You can use Real LLMs or a fake one, but ensure your code is robust against malformed responses.
 
 Good luck & have fun!
+
+##My Updates
+🚀 Features
+- 🔍 Natural language prompt interpretation via OpenAI (via OpenRouter)
+- 🛠️ Built-in tools (Weather, Currency Conversion, Math) in one file
+- 🧠 Structured plan generation using LLM
+- 🧪 Unit-tested with pytest
+- 📦 Easily extensible architecture
+
+🏗️ Architecture Diagram
++----------------------------+
+|        User Prompt         |
++----------------------------+
+              ↓
++----------------------------+
+|     LLM.generate_plan()    |  ← Interacts with OpenAI via OpenRouter
++----------------------------+
+              ↓
++----------------------------+
+|   Structured JSON Plan     |  ← Contains ordered tool calls
++----------------------------+
+              ↓
++----------------------------+
+|     Tool Dispatcher        |  ← Parses plan and routes to tools
++----------------------------+
+              ↓
++----------------------------+
+|        tools.py            |  ← Contains all tool logic
++----------------------------+
+      ↓        ↓        ↓
++--------+ +--------+ +--------+
+| Weather| |  Calc  | |   Fx   | ← Tool classes inside tools.py / if knowledge base then llm deals with it.
++--------+ +--------+ +--------+
+              ↓
++----------------------------+
+|     Final Answer Output     
+
+
+🔁 Code Flow
+- User Input: A natural language prompt is passed to main.py.
+- LLM Planning: LLM.generate_plan() sends the prompt to OpenAI and receives a structured JSON plan.
+- Tool Dispatching: Each step in the plan is routed to the appropriate class in tools.py.
+- Tool Execution: Tools fetch data (e.g., weather, currency rates) or compute results.
+- Response Assembly: Final output is constructed and returned to the user.
+
+
+🧩 Tool Details (All in tools.py)
+| Tool | Description  
+| WeatherTool | Fetches weather data for cities |
+| CalcTool | Evaluates math expressions |
+| FxTool | Converts currency | 
+| KbTool | Knowledge Based Tool|
+
+
+🧪 Testing
+Run all tests using:
+python -m pytest tests/test_smoke.py -v 
+
+📚 Example Prompt
+Prompt:
+"Convert 1000 usd to bdt "
+
+
+Result from console:
+ PS E:\se1-agent-debug-assignment2\se1-agent-debug-assignment> python main.py "Convert 1000 usd to bdt " 
+Convert 1000 usd to bdt 
+plan Convert 1000 usd to bdt 
+AMount: 1000.0
+121598.4 BDT
+
+Another Prompt:
+Add 10 to the average temperature in Sylhet and Dhaka right now. "
+
+Result:
+(.venv) PS E:\se1-agent-debug-assignment2\se1-agent-debug-assignment> python main.py "Add 10 to the average temperature in Sylhet and Dhaka right now. "
+Add 10 to the average temperature in Sylhet and Dhaka right now. 
+plan Add 10 to the average temperature in Sylhet and Dhaka right now. 
+Average temperature for Sylhet, Dhaka + 10 is: 37.6°C
+
+Another Prompt:
+"Weather in Sylhet right now. "
+
+Result:
+ PS E:\se1-agent-debug-assignment2\se1-agent-debug-assignment> python main.py "Weather in Sylhet right now. "          
+Weather in Sylhet right now. 
+plan Weather in Sylhet right now. 
+Sylhet: 26.2°C Condition:Light rain shower
+
+
+
